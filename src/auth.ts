@@ -12,8 +12,8 @@ export async function auth(state: State, options: AuthOptions) {
       options.factory
     ) {
       const { type, factory, ...factoryAuthOptions } = options;
+      // @ts-expect-error - factory is typed as never because the `@octokit/auth-app` types are ... complicated.
       return factory(
-        // @ts-ignore factory options differ if internal auth type is token
         Object.assign({}, factoryAuthOptions, {
           octokit: state.octokit,
           octokitOptions: state.octokitOptions,
@@ -35,8 +35,8 @@ export async function auth(state: State, options: AuthOptions) {
     options.event.payload.installation && options.event.payload.installation.id;
   const fullEventName = options.event.name + (action ? "." + action : "");
 
-  const OctokitWithEventAuth = (state.octokit
-    .constructor as unknown) as typeof Octokit;
+  const OctokitWithEventAuth = state.octokit
+    .constructor as unknown as typeof Octokit;
 
   if (!installationId) {
     const { auth, ...octokitOptions } = state.octokitOptions;

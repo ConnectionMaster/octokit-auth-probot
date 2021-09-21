@@ -143,10 +143,10 @@ describe("README examples", () => {
         },
       });
 
-      const eventOctokit = ((await octokit.auth({
+      const eventOctokit = (await octokit.auth({
         type: "event-octokit",
         event: { name: "push", payload: { installation: { id: 123 } } },
-      })) as unknown) as InstanceType<typeof ProbotOctokit>;
+      })) as unknown as InstanceType<typeof ProbotOctokit>;
 
       const { data } = await eventOctokit.request("/");
       expect(data).toStrictEqual({ ok: true });
@@ -192,10 +192,10 @@ describe("README examples", () => {
         },
       });
 
-      const eventOctokit = ((await octokit.auth({
+      const eventOctokit = (await octokit.auth({
         type: "event-octokit",
         event: { name: "push", payload: { installation: { id: 123 } } },
-      })) as unknown) as InstanceType<typeof ProbotOctokit>;
+      })) as unknown as InstanceType<typeof ProbotOctokit>;
 
       const { data } = await eventOctokit.request("/");
       expect(data).toStrictEqual({ ok: true });
@@ -217,18 +217,18 @@ describe("README examples", () => {
         },
       });
 
-      const eventOctokit = ((await octokit.auth({
+      const eventOctokit = (await octokit.auth({
         type: "event-octokit",
         event: {
           name: "installation",
           payload: { action: "deleted", installation: { id: 123 } },
         },
-      })) as unknown) as InstanceType<typeof ProbotOctokit>;
+      })) as unknown as InstanceType<typeof ProbotOctokit>;
 
       try {
         await eventOctokit.request("/");
         throw new Error("request should not resolve");
-      } catch (error) {
+      } catch (error: any) {
         expect(error.message).toEqual(
           `Not found. May be due to lack of authentication. Reason: Handling a "installation.deleted" event: The app's access has been revoked from @octokit (id: 123)`
         );
