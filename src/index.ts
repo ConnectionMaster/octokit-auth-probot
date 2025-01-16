@@ -1,9 +1,14 @@
-import { auth } from "./auth";
-import { getState } from "./get-state";
-import { StrategyOptions, State } from "./types";
-import { VERSION } from "./version";
+import { auth } from "./auth.js";
+import { getState } from "./get-state.js";
+import type { StrategyOptions, State } from "./types.js";
+import { VERSION } from "./version.js";
 
-export function createProbotAuth(options: StrategyOptions) {
+export interface ProbotAuth {
+  (options: Parameters<typeof auth>[1]): Promise<any>;
+  hook: State["auth"]["hook"];
+}
+
+export function createProbotAuth(options: StrategyOptions): ProbotAuth {
   const state: State = getState(options);
 
   return Object.assign(auth.bind(null, state), {

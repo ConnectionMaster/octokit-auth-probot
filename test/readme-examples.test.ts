@@ -2,12 +2,13 @@ import { Octokit } from "@octokit/core";
 import fetchMock from "fetch-mock";
 import MockDate from "mockdate";
 
-import { createProbotAuth } from "../src";
+import { createProbotAuth } from "../src/index.js";
+
+import { afterEach, beforeEach, describe, expect, it, test } from "vitest";
 
 const ProbotOctokit = Octokit.defaults({
   authStrategy: createProbotAuth,
 });
-const sandbox = fetchMock.sandbox.bind(fetchMock);
 
 const APP_ID = 1;
 const PRIVATE_KEY = `-----BEGIN RSA PRIVATE KEY-----
@@ -51,14 +52,14 @@ afterEach(() => {
 
 describe("README examples", () => {
   it("Token authentication", async () => {
-    const mock = sandbox().get(
+    const mock = fetchMock.sandbox().get(
       "path:/",
       { ok: true },
       {
         headers: {
           authorization: "token secret123",
         },
-      }
+      },
     );
 
     const octokit = new ProbotOctokit({
@@ -71,18 +72,18 @@ describe("README examples", () => {
     });
 
     const { data } = await octokit.request("/");
-    expect(data).toStrictEqual({ ok: true });
+    expect({ ...data }).toStrictEqual({ ok: true });
   });
 
   it("App authentication", async () => {
-    const mock = sandbox().get(
+    const mock = fetchMock.sandbox().get(
       "path:/app",
       { ok: true },
       {
         headers: {
           authorization: "bearer " + BEARER,
         },
-      }
+      },
     );
 
     const octokit = new ProbotOctokit({
@@ -96,16 +97,18 @@ describe("README examples", () => {
     });
 
     const { data } = await octokit.request("/app");
-    expect(data).toStrictEqual({ ok: true });
+    expect({ ...data }).toStrictEqual({ ok: true });
   });
 
   it("Unauthenticated", async () => {
-    const mock = sandbox().postOnce("path:/app-manifests/123/conversions", {
-      status: 201,
-      body: {
-        id: 1,
-      },
-    });
+    const mock = fetchMock
+      .sandbox()
+      .postOnce("path:/app-manifests/123/conversions", {
+        status: 201,
+        body: {
+          id: 1,
+        },
+      });
 
     const octokit = new ProbotOctokit({
       request: {
@@ -117,21 +120,21 @@ describe("README examples", () => {
       "POST /app-manifests/{code}/conversions",
       {
         code: "123",
-      }
+      },
     );
     expect(data.id).toEqual(1);
   });
 
   describe("Get authenticated octokit instance based on event", () => {
     test("with token auth", async () => {
-      const mock = sandbox().get(
+      const mock = fetchMock.sandbox().get(
         "path:/",
         { ok: true },
         {
           headers: {
             authorization: "token secret123",
           },
-        }
+        },
       );
 
       const octokit = new ProbotOctokit({
@@ -143,17 +146,18 @@ describe("README examples", () => {
         },
       });
 
-      const eventOctokit = ((await octokit.auth({
+      const eventOctokit = (await octokit.auth({
         type: "event-octokit",
         event: { name: "push", payload: { installation: { id: 123 } } },
-      })) as unknown) as InstanceType<typeof ProbotOctokit>;
+      })) as unknown as InstanceType<typeof ProbotOctokit>;
 
       const { data } = await eventOctokit.request("/");
-      expect(data).toStrictEqual({ ok: true });
+      expect({ ...data }).toStrictEqual({ ok: true });
     });
 
     test("with app auth and push event", async () => {
-      const mock = sandbox()
+      const mock = fetchMock
+        .sandbox()
         .postOnce(
           "path:/app/installations/123/access_tokens",
           {
@@ -168,7 +172,7 @@ describe("README examples", () => {
             headers: {
               authorization: "bearer " + BEARER,
             },
-          }
+          },
         )
         .getOnce(
           "path:/",
@@ -177,7 +181,7 @@ describe("README examples", () => {
             headers: {
               authorization: "token secret123",
             },
-          }
+          },
         );
 
       const ProbotOctokitWithRequestMock = ProbotOctokit.defaults({
@@ -192,18 +196,18 @@ describe("README examples", () => {
         },
       });
 
-      const eventOctokit = ((await octokit.auth({
+      const eventOctokit = (await octokit.auth({
         type: "event-octokit",
         event: { name: "push", payload: { installation: { id: 123 } } },
-      })) as unknown) as InstanceType<typeof ProbotOctokit>;
+      })) as unknown as InstanceType<typeof ProbotOctokit>;
 
       const { data } = await eventOctokit.request("/");
-      expect(data).toStrictEqual({ ok: true });
+      expect({ ...data }).toStrictEqual({ ok: true });
       expect(mock.done()).toBeTruthy();
     });
 
     test("with app auth and installation.deleted event", async () => {
-      const mock = sandbox().getOnce("path:/", 404);
+      const mock = fetchMock.sandbox().getOnce("path:/", 404);
 
       const ProbotOctokitWithRequestMock = ProbotOctokit.defaults({
         request: {
@@ -217,20 +221,20 @@ describe("README examples", () => {
         },
       });
 
-      const eventOctokit = ((await octokit.auth({
+      const eventOctokit = (await octokit.auth({
         type: "event-octokit",
         event: {
           name: "installation",
           payload: { action: "deleted", installation: { id: 123 } },
         },
-      })) as unknown) as InstanceType<typeof ProbotOctokit>;
+      })) as unknown as InstanceType<typeof ProbotOctokit>;
 
       try {
         await eventOctokit.request("/");
         throw new Error("request should not resolve");
-      } catch (error) {
+      } catch (error: any) {
         expect(error.message).toEqual(
-          `Not found. May be due to lack of authentication. Reason: Handling a "installation.deleted" event: The app's access has been revoked from @octokit (id: 123)`
+          `Not found. May be due to lack of authentication. Reason: Handling a "installation.deleted" event: The app's access has been revoked from @octokit (id: 123)`,
         );
       }
     });
